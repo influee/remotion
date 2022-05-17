@@ -14,4 +14,5 @@ export type RemotionVideoProps = Omit<
 > & {
 	volume?: VolumeProp;
 	playbackRate?: number;
+	improvedSeeking?: boolean;
 };

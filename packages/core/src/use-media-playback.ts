@@ -12,11 +12,13 @@ export const useMediaPlayback = ({
 	src,
 	mediaType,
 	playbackRate: localPlaybackRate,
+	improvedSeeking,
 }: {
 	mediaRef: RefObject<HTMLVideoElement | HTMLAudioElement>;
 	src: string | undefined;
 	mediaType: 'audio' | 'video';
 	playbackRate: number;
+	improvedSeeking?: boolean;
 }) => {
 	const {playbackRate: globalPlaybackRate} = useContext(TimelineContext);
 	const frame = useCurrentFrame();
@@ -68,6 +70,27 @@ export const useMediaPlayback = ({
 			// or if time shift is bigger than 0.2sec
 			mediaRef.current.currentTime = shouldBeTime;
 			warnAboutNonSeekableMedia(mediaRef.current);
+		} else if (
+			improvedSeeking &&
+			frame + mediaStartsAt < 3 * fps - 10 &&
+			timeShift > 0.001 &&
+			!mediaRef.current.ended
+		) {
+			const multiplier = Math.max(
+				0.5,
+				Math.min(
+					10,
+					1 +
+						((shouldBeTime - isTime) * fps) /
+							Math.max(
+								1,
+								Math.min(3 * fps, Math.abs(frame + mediaStartsAt - 80))
+							)
+				)
+			);
+			mediaRef.current.playbackRate = Math.max(0, playbackRate * multiplier);
+		} else if (mediaRef.current.playbackRate !== Math.max(0, playbackRate)) {
+			mediaRef.current.playbackRate = Math.max(0, playbackRate);
 		}
 
 		if (!playing || absoluteFrame === 0) {
